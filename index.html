@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บิลจัดซื้อวัตถุดิบ</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2d6a4f;
+    --green-light: #40916c;
+    --green-pale: #d8f3dc;
+    --green-mid: #b7e4c7;
+    --cream: #fefae0;
+    --warm: #f8f4e8;
+    --dark: #1b1b1b;
+    --gray: #6b6b6b;
+    --border: #d4c89a;
+    --red: #c1121f;
+    --shadow: 0 2px 12px rgba(45,106,79,0.13);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; background: var(--warm); color: var(--dark); min-height: 100vh; }
+
+.topbar {
+background: var(–green); color: white; padding: 14px 16px 10px;
+display: flex; align-items: center; justify-content: space-between;
+position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+.topbar-title { font-family: ‘Prompt’, sans-serif; font-size: 1.05rem; font-weight: 700; }
+.topbar-sub { font-size: 0.72rem; opacity: 0.78; margin-top: 1px; }
+.tab-btns { display: flex; gap: 4px; }
+.tab-btn {
+background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+color: white; border-radius: 20px; padding: 5px 13px; font-size: 0.8rem;
+font-family: ‘Sarabun’, sans-serif; cursor: pointer; transition: all 0.2s;
+}
+.tab-btn.active { background: white; color: var(–green); font-weight: 600; }
+
+.view { display: none; padding: 14px; }
+.view.active { display: block; }
+
+.card {
+background: white; border-radius: 14px; padding: 16px;
+box-shadow: var(–shadow); margin-bottom: 14px;
+border: 1px solid rgba(212,200,154,0.4);
+}
+.card-title {
+font-family: ‘Prompt’, sans-serif; font-size: 0.95rem; font-weight: 600;
+color: var(–green); margin-bottom: 12px; display: flex; align-items: center; gap: 7px;
+}
+
+label { font-size: 0.83rem; color: var(–gray); display: block; margin-bottom: 4px; font-weight: 500; }
+input, select, textarea {
+width: 100%; border: 1.5px solid var(–border); border-radius: 9px;
+padding: 9px 12px; font-size: 0.92rem; font-family: ‘Sarabun’, sans-serif;
+background: var(–cream); color: var(–dark); outline: none; transition: border-color 0.2s;
+}
+input:focus, select:focus { border-color: var(–green-light); background: white; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-group { margin-bottom: 11px; }
+
+.items-wrap { overflow-x: auto; }
+.items-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.items-table th {
+background: var(–green-pale); color: var(–green); font-weight: 600;
+padding: 8px 8px; text-align: left; white-space: nowrap;
+}
+.items-table td { padding: 7px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
+.items-table tr:last-child td { border-bottom: none; }
+.del-btn { background: none; border: none; color: var(–red); cursor: pointer; font-size: 1.1rem; padding: 0 2px; }
+
+.add-btn {
+width: 100%; background: var(–green-pale); border: 1.5px dashed var(–green-light);
+color: var(–green); border-radius: 9px; padding: 9px; font-size: 0.9rem;
+font-family: ‘Sarabun’, sans-serif; cursor: pointer; margin-top: 10px; font-weight: 600;
+}
+.add-btn:hover { background: var(–green-mid); }
+
+.total-bar {
+background: var(–green); color: white; border-radius: 12px;
+padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;
+margin-bottom: 14px;
+}
+.total-bar .label { font-size: 0.88rem; opacity: 0.85; }
+.total-bar .amount { font-family: ‘Prompt’, sans-serif; font-size: 1.5rem; font-weight: 700; }
+
+canvas {
+border: 1.5px solid var(–border); border-radius: 9px;
+background: white; touch-action: none; display: block; margin: 0 auto; cursor: crosshair;
+width: 100%; height: 120px;
+}
+.sig-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
+.sig-btn {
+border: 1.5px solid var(–border); background: white; border-radius: 8px;
+padding: 6px 14px; font-size: 0.82rem; font-family: ‘Sarabun’, sans-serif; cursor: pointer; color: var(–gray);
+}
+.sig-btn:hover { background: var(–green-pale); color: var(–green); border-color: var(–green-light); }
+
+.actions { display: flex; gap: 10px; margin-bottom: 20px; }
+.btn-main {
+flex: 1; background: var(–green); color: white; border: none;
+border-radius: 11px; padding: 13px; font-size: 0.95rem; font-weight: 600;
+font-family: ‘Sarabun’, sans-serif; cursor: pointer;
+}
+.btn-main:hover { background: var(–green-light); }
+.btn-outline {
+flex: 1; background: white; color: var(–green); border: 1.5px solid var(–green);
+border-radius: 11px; padding: 13px; font-size: 0.95rem; font-weight: 600;
+font-family: ‘Sarabun’, sans-serif; cursor: pointer;
+}
+.btn-outline:hover { background: var(–green-pale); }
+
+.bill-card {
+background: white; border-radius: 14px; padding: 14px 16px;
+box-shadow: var(–shadow); margin-bottom: 12px;
+border: 1px solid rgba(212,200,154,0.4);
+}
+.bill-no { font-family: ‘Prompt’, sans-serif; font-size: 0.85rem; color: var(–green); font-weight: 600; }
+.bill-date { font-size: 0.78rem; color: var(–gray); margin-top: 2px; }
+.bill-vendor { font-size: 0.92rem; font-weight: 600; margin: 4px 0 2px; }
+.bill-amount { font-family: ‘Prompt’, sans-serif; font-size: 1.15rem; font-weight: 700; color: var(–green); }
+.bill-actions { display: flex; gap: 6px; margin-top: 10px; }
+.bill-btn {
+flex: 1; border-radius: 8px; padding: 7px; font-size: 0.82rem;
+font-family: ‘Sarabun’, sans-serif; cursor: pointer; border: 1.5px solid; font-weight: 500;
+}
+.view-btn { background: var(–green-pale); color: var(–green); border-color: var(–green-mid); }
+.del-bill-btn { background: #fff0f0; color: var(–red); border-color: #ffb3b3; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(–gray); }
+.empty-state .icon { font-size: 3rem; margin-bottom: 10px; }
+
+.summary-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+.summary-row:last-child { border-bottom: none; }
+.summary-total { background: var(–green-pale); border-radius: 10px; padding: 12px 14px; margin-top: 10px; display: flex; justify-content: space-between; }
+
+.modal-overlay {
+display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+z-index: 200; justify-content: center; align-items: flex-end;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+max-height: 90vh; overflow-y: auto; padding: 20px 18px 30px;
+animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-title { font-family: ‘Prompt’, sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 14px; text-align: center; color: var(–green); }
+.modal-close { float: right; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(–gray); }
+
+.bill-preview { border: 1.5px solid var(–border); border-radius: 10px; padding: 16px; background: var(–cream); font-size: 0.88rem; }
+.preview-header { text-align: center; border-bottom: 1.5px dashed var(–border); padding-bottom: 12px; margin-bottom: 12px; }
+.preview-company { font-family: ‘Prompt’, sans-serif; font-size: 1.1rem; font-weight: 700; color: var(–green); }
+.preview-title { font-size: 0.95rem; font-weight: 600; margin: 4px 0 2px; }
+.preview-meta { font-size: 0.8rem; color: var(–gray); }
+.preview-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+.preview-table th { background: var(–green-pale); padding: 6px 8px; font-size: 0.8rem; color: var(–green); }
+.preview-table td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 0.82rem; }
+.preview-sign { display: flex; justify-content: space-between; margin-top: 16px; padding-top: 12px; border-top: 1.5px dashed var(–border); }
+.sign-box { text-align: center; width: 45%; }
+.sig-line { border-top: 1.5px solid #999; margin-bottom: 4px; }
+.sig-name { font-size: 0.78rem; color: var(–gray); }
+.sign-img { max-height: 50px; max-width: 100%; }
+
+@media print {
+body > *:not(.modal-overlay) { display: none !important; }
+.modal-overlay { display: flex !important; position: static; background: none; }
+.modal { box-shadow: none; border-radius: 0; max-height: none; }
+.modal-close, .modal .actions { display: none !important; }
+}
+</style>
+
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">🛒 บิลจัดซื้อวัตถุดิบ</div>
+    <div class="topbar-sub">ระบบจัดการบิลค่าใช้จ่ายครัว</div>
+  </div>
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="switchTab('create',this)">สร้างบิล</button>
+    <button class="tab-btn" onclick="switchTab('history',this)">ประวัติ</button>
+    <button class="tab-btn" onclick="switchTab('summary',this)">สรุป</button>
+  </div>
+</div>
+
+<!-- CREATE -->
+
+<div id="tab-create" class="view active">
+  <div class="card">
+    <div class="card-title">📋 ข้อมูลบิล</div>
+    <div class="row2">
+      <div class="form-group">
+        <label>บริษัท / ผู้จัดทำ</label>
+        <input type="text" id="company" placeholder="ชื่อบริษัท...">
+      </div>
+      <div class="form-group">
+        <label>วันที่ <span style="font-size:0.75rem;color:var(--red);font-weight:400">🔒 เฉพาะวันนี้เท่านั้น</span></label>
+        <input type="date" id="billDate" readonly style="background:#f0f0f0;color:var(--gray);cursor:not-allowed">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="form-group">
+        <label>ชื่อผู้ขาย / ร้านค้า</label>
+        <input type="text" id="vendorName" placeholder="ชื่อแม่ค้า...">
+      </div>
+      <div class="form-group">
+        <label>เลขที่บิล</label>
+        <input type="text" id="billNo" placeholder="BL-001">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>หมวดหมู่วัตถุดิบ</label>
+      <select id="category">
+        <option>🥦 ผักและผลไม้</option>
+        <option>🥩 เนื้อสัตว์</option>
+        <option>🐟 อาหารทะเล</option>
+        <option>🧂 เครื่องป
