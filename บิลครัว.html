@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="บิลครัว">
+<title>บิลครัว 🍳</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Sarabun', 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a1a; min-height: 100vh; }
+  a { display: none; }
+
+  .app { max-width: 480px; margin: 0 auto; padding: 0 0 80px; }
+
+  /* Top bar */
+  .topbar { background: #fff; border-bottom: 0.5px solid #e5e3dd; padding: 14px 16px 10px; position: sticky; top: 0; z-index: 10; }
+  .topbar-row { display: flex; align-items: center; justify-content: space-between; }
+  .app-title { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+  .app-sub { font-size: 12px; color: #888; margin-top: 1px; }
+  .btn-row { display: flex; gap: 6px; }
+
+  /* Buttons */
+  .btn { font-family: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer; border: 0.5px solid #d0cec8; background: #f5f4f0; color: #1a1a1a; transition: background 0.15s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .btn-excel { background: #E1F5EE; color: #0F6E56; border-color: #9FE1CB; }
+  .btn-excel.done { background: #0F6E56; color: #fff; }
+  .btn-danger { background: #FCEBEB; color: #A32D2D; border-color: #F7C1C1; font-size: 12px; padding: 4px 10px; }
+  .btn-cancel { background: transparent; color: #888; font-size: 12px; padding: 4px 10px; }
+
+  /* Summary */
+  .summary { padding: 12px 16px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { background: #fff; border-radius: 10px; padding: 10px 12px; border: 0.5px solid #e5e3dd; }
+  .stat-label { font-size: 11px; color: #888; margin-bottom: 3px; }
+  .stat-value { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+
+  /* Category pills */
+  .cat-pills { padding: 10px 16px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+  .cat-pill { font-size: 11px; font-weight: 600; border-radius: 99px; padding: 3px 10px; }
+
+  /* Filter tabs */
+  .filter-row { padding: 10px 16px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn { font-family: inherit; font-size: 12px; padding: 4px 10px; border-radius: 99px; cursor: pointer; border: 0.5px solid #d0cec8; background: #f5f4f0; color: #888; }
+  .filter-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+
+  /* Entry list */
+  .list { padding: 10px 16px 0; }
+  .entry { background: #fff; border: 0.5px solid #e5e3dd; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10; }
+  .entry-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .entry-body { flex: 1; min-width: 0; margin-left: 10px; }
+  .entry-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .entry-date { font-size: 12px; color: #888; }
+  .entry-amount { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .entry-tags { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+  .entry-cat { font-size: 11px; font-weight: 600; border-radius: 99px; padding: 1px 7px; }
+  .entry-vendor { font-size: 12px; color: #888; }
+  .entry-note { font-size: 12px; color: #888; margin-top: 2px; }
+  .btn-sig { font-size: 11px; color: #185FA5; background: transparent; border: none; cursor: pointer; padding: 0; margin-top: 4px; font-family: inherit; }
+  .entry-actions { flex-shrink: 0; display: flex; gap: 4px; align-items: center; }
+  .btn-del { background: transparent; border: none; cursor: pointer; color: #ccc; font-size: 14px; padding: 2px 4px; }
+
+  /* Empty */
+  .empty { text-align: center; padding: 3rem 0; color: #aaa; font-size: 13px; line-height: 1.8; }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* Form */
+  .form-wrap { padding: 12px 16px 0; }
+  .form-card { background: #fff; border: 0.5px solid #e5e3dd; border-radius: 12px; padding: 1rem 1.25rem; }
+  .form-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+  .field { margin-bottom: 10px; }
+  .field label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
+  .field input, .field select, .field textarea {
+    width: 100%; font-size: 14px; padding: 9px 10px; border: 0.5px solid #d0cec8;
+    border-radius: 8px; background: #f9f8f6; color: #1a1a1a; font-family: inherit; outline: none;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field textarea { resize: vertical; line-height: 1.5; }
+  .field-error { font-size: 11px; color: #A32D2D; margin-top: 4px; }
+  .divider { border: none; border-top: 0.5px solid #e5e3dd; margin: 12px 0; }
+  .btn-submit { width: 100%; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-submit:active { opacity: 0.85; }
+
+  /* Signature canvas */
+  .sig-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .sig-label { font-size: 12px; color: #888; }
+  .btn-sig-clear { font-size: 11px; color: #aaa; background: transparent; border: none; cursor: pointer; font-family: inherit; }
+  canvas#sigCanvas { width: 100%; height: 100px; border: 0.5px solid #d0cec8; border-radius: 8px; background: #fafaf8; cursor: crosshair; touch-action: none; display: block; }
+  .sig-hint { font-size: 11px; color: #bbb; margin-top: 4px; }
+
+  /* Modal */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: #fff; border-radius: 14px; padding: 1rem 1.25rem; max-width: 300px; width: 88%; }
+  .modal-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  .modal img { width: 100%; border-radius: 8px; border: 0.5px solid #e5e3dd; background: #fafaf8; }
+  .btn-modal-close { margin-top: 10px; width: 100%; border: 0.5px solid #d0cec8; background: transparent; border-radius: 8px; padding: 8px; font-size: 13px; cursor: pointer; font-family: inherit; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px); background: #1a1a1a; color: #fff; font-size: 13px; padding: 9px 18px; border-radius: 99px; z-index: 200; transition: transform 0.3s; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-row">
+      <div>
+        <div class="app-title">บิลครัว 🍳</div>
+        <div class="app-sub">บันทึกค่าใช้จ่ายรายวัน</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-excel" id="btnExcel" onclick="exportExcel()" style="display:none">⬇ Excel</button>
+        <button class="btn btn-primary" id="btnToggle" onclick="toggleView()">+ เพิ่มรายการ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <div class="stat-card"><div class="stat-label">ยอดรวมทั้งหมด</div><div class="stat-value" id="statTotal">฿0</div></div>
+    <div class="stat-card"><div class="stat-label">จำนวนบิล</div><div class="stat-value" id="statCount">0 รายการ</div></div>
+  </div>
+  <div class="cat-pills" id="catPills"></div>
+
+  <!-- LIST VIEW -->
+  <div id="viewList">
+    <div class="filter-row" id="filterRow"></div>
+    <div class="list" id="entryList"></div>
+  </div>
+
+  <!-- ADD FORM -->
+  <div id="viewForm" style="display:none">
+    <div class="form-wrap">
+      <div class="form-card">
+        <div class="form-title">เพิ่มรายการใหม่</div>
+        <div class="field"><label>วันที่</label><input type="date" id="fDate"></div>
+        <div class="field">
+          <label>หมวดหมู่</label>
+          <select id="fCat">
+            <option value="ingredient">วัตถุดิบ</option>
+            <option value="seasoning">เครื่องปรุง</option>
+            <option value="package">บรรจุภัณฑ์</option>
+            <option value="equipment">อุปกรณ์</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>จำนวนเงิน (บาท)</label>
+          <input type="number" id="fAmount" placeholder="0" min="0" step="1" inputmode="numeric">
+          <div class="field-error" id="fError" style="display:none">กรุณากรอกจำนวนเงิน</div>
+        </div>
+        <div class="field"><label>ร้านค้า / แหล่งซื้อ</label><input type="text" id="fVendor" placeholder="เช่น ตลาดสด, BigC"></div>
+        <div class="field"><label>รายการ / หมายเหตุ</label><textarea id="fNote" rows="2" placeholder="เช่น หมูสับ 2 กก., ผักบุ้ง 3 มัด"></textarea></div>
+        <hr class="divider">
+        <!-- Signature -->
+        <div class="sig-label-row">
+          <span class="sig-label">ลายเซ็นต์ผู้จ่ายเงิน</span>
+          <button class="btn-sig-clear" id="btnClearSig" onclick="clearSig()" style="display:none">ล้าง</button>
+        </div>
+        <canvas id="sigCanvas" width="800" height="200"></canvas>
+        <div class="sig-hint" id="sigHint">เซ็นชื่อด้วยนิ้วหรือเมาส์ในกรอบด้านบน</div>
+        <hr class="divider">
+        <button class="btn-submit" onclick="saveEntry()">บันทึกรายการ</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Signature Modal -->
+<div class="modal-bg" id="sigModal" onclick="closeSigModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">ลายเซ็นต์</div>
+    <img id="sigModalImg" src="">
+    <button class="btn-modal-close" onclick="closeSigModal()">ปิด</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const CATS = {
+  ingredient: { label: 'วัตถุดิบ',    color: '#0F6E56', bg: '#E1F5EE' },
+  seasoning:  { label: 'เครื่องปรุง', color: '#854F0B', bg: '#FAEEDA' },
+  package:    { label: 'บรรจุภัณฑ์', color: '#185FA5', bg: '#E6F1FB' },
+  equipment:  { label: 'อุปกรณ์',     color: '#993556', bg: '#FBEAF0' },
+  other:      { label: 'อื่นๆ',       color: '#5F5E5A', bg: '#F1EFE8' },
+};
+
+const STORAGE_KEY = 'bilkrua_entries';
+let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let filterCat = 'all';
+let deleteConfirm = null;
+let sigData = null;
+let inForm = false;
+
+// Signature pad
+const canvas = document.getElementById('sigCanvas');
+const ctx = canvas.getContext('2d');
+let drawing = false, lx = 0, ly = 0;
+
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  const sx = canvas.width / r.width, sy = canvas.height / r.height;
+  const src = e.touches ? e.touches[0] : e;
+  return { x: (src.clientX - r.left) * sx, y: (src.clientY - r.top) * sy };
+}
+canvas.addEventListener('mousedown',  e => { drawing = true; const p = getPos(e); lx = p.x; ly = p.y; });
+canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; const p = getPos(e); lx = p.x; ly = p.y; }, { passive: false });
+canvas.addEventListener('mousemove',  e => { if (!drawing) return; draw(e); });
+canvas.addEventListener('touchmove',  e => { e.preventDefault(); if (!drawing) return; draw(e); }, { passive: false });
+canvas.addEventListener('mouseup',    e => { drawing = false; saveSig(); });
+canvas.addEventListener('touchend',   e => { drawing = false; saveSig(); });
+canvas.addEventListener('mouseleave', e => { drawing = false; });
+
+function draw(e) {
+  const p = getPos(e);
+  ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(p.x, p.y);
+  ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+  lx = p.x; ly = p.y;
+}
+function saveSig() {
+  sigData = canvas.toDataURL();
+  document.getElementById('btnClearSig').style.display = 'block';
+  document.getElementById('sigHint').textContent = '✓ มีลายเซ็นต์แล้ว';
+}
+function clearSig() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  sigData = null;
+  document.getElementById('btnClearSig').style.display = 'none';
+  document.getElementById('sigHint').textContent = 'เซ็นชื่อด้วยนิ้วหรือเมาส์ในกรอบด้านบน';
+}
+
+// Helpers
+function fmtDate(d) { return new Date(d + 'T00:00:00').toLocaleDateString('th-TH', { day: '2-digit', month: 'short' }); }
+function fmtThb(n) { return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0 }).format(n); }
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Toggle view
+function toggleView() {
+  inForm = !inForm;
+  document.getElementById('viewList').style.display = inForm ? 'none' : 'block';
+  document.getElementById('viewForm').style.display = inForm ? 'block' : 'none';
+  document.getElementById('btnToggle').textContent = inForm ? '← ย้อนกลับ' : '+ เพิ่มรายการ';
+  document.getElementById('btnToggle').className = inForm ? 'btn' : 'btn btn-primary';
+  if (inForm) {
+    const todayStr = new Date().toISOString().slice(0, 10);
+document.getElementById('fDate').value = todayStr;
+document.getElementById('fDate').max = todayStr;
+document.getElementById('fDate').min = todayStr;
+    document.getElementById('fError').style.display = 'none';
+    clearSig();
+  }
+}
+
+// Save entry
+function saveEntry() {
+  const amount = parseFloat(document.getElementById('fAmount').value);
+  if (!amount || amount <= 0) { document.getElementById('fError').style.display = 'block'; return; }
+  const entry = {
+    id: Date.now(),
+    date: document.getElementById('fDate').value,
+    category: document.getElementById('fCat').value,
+    amount,
+    vendor: document.getElementById('fVendor').value.trim(),
+    note: document.getElementById('fNote').value.trim(),
+    signature: sigData,
+  };
+  entries.push(entry);
+  save();
+  document.getElementById('fAmount').value = '';
+  document.getElementById('fVendor').value = '';
+  document.getElementById('fNote').value = '';
+  document.getElementById('fCat').value = 'ingredient';
+  toggleView();
+  render();
+  showToast('บันทึกแล้ว ✓');
+}
+
+// Delete
+function confirmDelete(id) {
+  deleteConfirm = id;
+  render();
+}
+function cancelDelete() { deleteConfirm = null; render(); }
+function doDelete(id) {
+  entries = entries.filter(e => e.id !== id);
+  save(); deleteConfirm = null; render();
+  showToast('ลบรายการแล้ว');
+}
+
+// Sig modal
+function openSigModal(src) {
+  document.getElementById('sigModalImg').src = src;
+  document.getElementById('sigModal').classList.add('open');
+}
+function closeSigModal() { document.getElementById('sigModal').classList.remove('open'); }
+
+// Export Excel
+function exportExcel() {
+  const rows = entries.map((e, i) => ({
+    'ลำดับ': i + 1,
+    'วันที่': e.date,
+    'หมวดหมู่': CATS[e.category]?.label || e.category,
+    'ร้านค้า / แหล่งซื้อ': e.vendor || '-',
+    'รายการ / หมายเหตุ': e.note || '-',
+    'จำนวนเงิน (บาท)': e.amount,
+    'มีลายเซ็นต์': e.signature ? '✓ มี' : '-',
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{ wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 22 }, { wch: 30 }, { wch: 18 }, { wch: 12 }];
+
+  const summaryRows = Object.entries(CATS).map(([id, c]) => {
+    const cat = entries.filter(e => e.category === id);
+    return { 'หมวดหมู่': c.label, 'จำนวนบิล': cat.length, 'รวมเงิน (บาท)': cat.reduce((s, e) => s + e.amount, 0) };
+  });
+  summaryRows.push({ 'หมวดหมู่': 'รวมทั้งหมด', 'จำนวนบิล': entries.length, 'รวมเงิน (บาท)': entries.reduce((s, e) => s + e.amount, 0) });
+
+  const ws2 = XLSX.utils.json_to_sheet(summaryRows);
+  ws2['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 18 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'รายการค่าใช้จ่าย');
+  XLSX.utils.book_append_sheet(wb, ws2, 'สรุปตามหมวดหมู่');
+  XLSX.writeFile(wb, 'บิลครัว_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  showToast('ดาวน์โหลด Excel แล้ว ✓');
+}
+
+// Render
+function render() {
+  const grandTotal = entries.reduce((s, e) => s + e.amount, 0);
+  document.getElementById('statTotal').textContent = fmtThb(grandTotal);
+  document.getElementById('statCount').textContent = entries.length + ' รายการ';
+  document.getElementById('btnExcel').style.display = entries.length > 0 && !inForm ? 'block' : 'none';
+
+  // Category pills
+  const totals = {};
+  Object.keys(CATS).forEach(k => totals[k] = 0);
+  entries.forEach(e => totals[e.category] = (totals[e.category] || 0) + e.amount);
+  const pillsEl = document.getElementById('catPills');
+  pillsEl.innerHTML = Object.entries(CATS).filter(([k]) => totals[k] > 0).map(([k, c]) =>
+    `<div class="cat-pill" style="background:${c.bg};color:${c.color}">${c.label}: ${fmtThb(totals[k])}</div>`
+  ).join('');
+
+  // Filter row
+  const filterEl = document.getElementById('filterRow');
+  filterEl.innerHTML = `<button class="filter-btn ${filterCat==='all'?'active':''}" onclick="setFilter('all')">ทั้งหมด</button>` +
+    Object.entries(CATS).map(([k, c]) =>
+      `<button class="filter-btn ${filterCat===k?'active':''}" onclick="setFilter('${k}')" style="${filterCat===k?`background:${c.color};color:#fff;border-color:${c.color}`:''}"> ${c.label}</button>`
+    ).join('');
+
+  // Entry list
+  const filtered = (filterCat === 'all' ? entries : entries.filter(e => e.category === filterCat)).slice().reverse();
+  const listEl = document.getElementById('entryList');
+  if (filtered.length === 0) {
+    listEl.innerHTML = `<div class="empty"><div class="empty-icon">📝</div>ยังไม่มีรายการ<br>กด "+ เพิ่มรายการ" เพื่อเริ่มบันทึก</div>`;
+    return;
+  }
+  listEl.innerHTML = filtered.map(e => {
+    const cat = CATS[e.category] || CATS.other;
+    const isConfirm = deleteConfirm === e.id;
+    return `
+      <div class="entry">
+        <div class="entry-dot" style="background:${cat.color}"></div>
+        <div class="entry-body">
+          <div class="entry-top">
+            <span class="entry-date">${fmtDate(e.date)}</span>
+            <span class="entry-amount">${fmtThb(e.amount)}</span>
+          </div>
+          <div class="entry-tags">
+            <span class="entry-cat" style="background:${cat.bg};color:${cat.color}">${cat.label}</span>
+            ${e.vendor ? `<span class="entry-vendor">${e.vendor}</span>` : ''}
+          </div>
+          ${e.note ? `<div class="entry-note">${e.note}</div>` : ''}
+          ${e.signature ? `<button class="btn-sig" onclick="openSigModal('${e.signature.substring(0,30)}' + document.querySelector('[data-id=\\'${e.id}\\']').getAttribute('data-sig'))">🖊 ดูลายเซ็นต์</button>` : ''}
+        </div>
+        <div class="entry-actions">
+          ${isConfirm
+            ? `<button class="btn btn-danger" onclick="doDelete(${e.id})">ลบ</button><button class="btn btn-cancel" onclick="cancelDelete()">ยกเลิก</button>`
+            : `<button class="btn-del" onclick="confirmDelete(${e.id})">✕</button>`}
+        </div>
+      </div>`;
+  }).join('');
+
+  // Fix sig buttons with actual data
+  filtered.forEach(e => {
+    if (e.signature) {
+      const btn = listEl.querySelector(`[data-sig-id="${e.id}"]`);
+    }
+  });
+
+  // Re-render sig buttons properly
+  filtered.filter(e => e.signature).forEach(e => {
+    const entries_els = listEl.querySelectorAll('.entry');
+    entries_els.forEach(el => {
+      const sigBtn = el.querySelector('.btn-sig');
+      if (sigBtn && sigBtn.textContent.includes('ลายเซ็นต์')) {
+        const idx = filtered.findIndex(x => x.id === e.id);
+        sigBtn.onclick = () => openSigModal(e.signature);
+      }
+    });
+  });
+}
+
+function setFilter(cat) { filterCat = cat; render(); }
+
+// Init
+const todayStr = new Date().toISOString().slice(0, 10);
+document.getElementById('fDate').value = todayStr;
+document.getElementById('fDate').max = todayStr;
+document.getElementById('fDate').min = todayStr;
+render();
+</script>
+</body>
+</html>
